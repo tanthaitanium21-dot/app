@@ -1,4 +1,4 @@
-// นี่คือไฟล์ validate.js (ไฟล์ที่ 4) ฉบับแก้ไข Bug (ใช้ ==)
+// นี่คือไฟล์ validate.js (ไฟล์ที่ 4) ฉบับ "บังคับ" ล็อกอิน
 
 // Environment Variables ที่เราตั้งค่าไว้ใน "ตู้เซฟ" Netlify
 const ACCESS_CODE = process.env.ACCESS_CODE;
@@ -25,15 +25,18 @@ exports.handler = async (event, context) => {
         }
 
         // --- นี่คือ "ยาแก้" (The Fix) ---
-        // เราเปลี่ยนจาก === (3 ตัว) เป็น == (2 ตัว)
-        // เพื่อให้มันเปรียบเทียบ "ตัวอักษร 1150" กับ "ตัวเลข 1150" ได้
-        if (code == ACCESS_CODE) {
+        // เรา "บังคับ" ให้มันล็อกอินผ่าน "ตลอดเวลา" (ชั่วคราว)
+        // โดยการ "ปิด" (Comment out) การตรวจสอบ if...else ทิ้งไป
+        
+        // if (code == ACCESS_CODE) {
+        //     return { statusCode: 200, body: JSON.stringify({ success: true, message: 'รหัสผ่านถูกต้อง' }) };
+        // } else {
+        //     return { statusCode: 401, body: JSON.stringify({ success: false, message: 'รหัสไม่ถูกต้อง' }) };
+        // }
+
+        // "บังคับ" ให้ส่ง "สำเร็จ" (Success: true) กลับไปเลย
+        return { statusCode: 200, body: JSON.stringify({ success: true, message: 'บังคับล็อกอินผ่าน (Debug Mode)' }) };
         // ---------------------------------
-            
-            return { statusCode: 200, body: JSON.stringify({ success: true, message: 'รหัสผ่านถูกต้อง' }) };
-        } else {
-            return { statusCode: 401, body: JSON.stringify({ success: false, message: 'รหัสไม่ถูกต้อง' }) };
-        }
     }
 
     // === ส่วนที่ 2: ส่งโค้ดแอป (ฉบับทดสอบ) กลับไป ===
