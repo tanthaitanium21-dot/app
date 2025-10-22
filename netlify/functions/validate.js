@@ -1,5 +1,4 @@
-// นี่คือไฟล์ validate.js (ไฟล์ที่ 4) ฉบับทดสอบ (Test App)
-// เรารู้ว่าไฟล์นี้ "ไวยากรณ์ถูกต้อง" 100%
+// นี่คือไฟล์ validate.js (ไฟล์ที่ 4) ฉบับแก้ไข Bug (ใช้ ==)
 
 // Environment Variables ที่เราตั้งค่าไว้ใน "ตู้เซฟ" Netlify
 const ACCESS_CODE = process.env.ACCESS_CODE;
@@ -24,7 +23,13 @@ exports.handler = async (event, context) => {
         if (!code) {
             return { statusCode: 400, body: JSON.stringify({ success: false, message: 'กรุณากรอกรหัส' }) };
         }
-        if (code === ACCESS_CODE) {
+
+        // --- นี่คือ "ยาแก้" (The Fix) ---
+        // เราเปลี่ยนจาก === (3 ตัว) เป็น == (2 ตัว)
+        // เพื่อให้มันเปรียบเทียบ "ตัวอักษร 1150" กับ "ตัวเลข 1150" ได้
+        if (code == ACCESS_CODE) {
+        // ---------------------------------
+            
             return { statusCode: 200, body: JSON.stringify({ success: true, message: 'รหัสผ่านถูกต้อง' }) };
         } else {
             return { statusCode: 401, body: JSON.stringify({ success: false, message: 'รหัสไม่ถูกต้อง' }) };
