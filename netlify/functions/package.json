@@ -1,13 +1,1 @@
-﻿{
-  "name": "netlify-functions",
-  "version": "1.0.0",
-  "description": "Netlify functions for the app",
-  "main": "validate.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {}
-}
 
