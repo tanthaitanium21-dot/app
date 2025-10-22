@@ -1,18 +1,12 @@
-﻿[build]
-  # ไม่ต้องมี build command
+
   command = "# No build command needed"
-  
-  # บอก Netlify ว่าฟังก์ชันของเราอยู่ที่ไหน
   functions = "netlify/functions"
-  
-  # (สำคัญมาก) บอก Netlify ว่าหน้าเว็บ (index.html) อยู่ที่ไหน
-  # "." หมายถึงอยู่ที่ Root (หน้าสุด) ของโปรเจกต์
   publish = "."
 
-# (สำคัญมาก) ตั้งค่าการ Redirect
-# นี่คือการบอกว่า "ถ้าใครเรียก /api/... ให้ส่งต่อไปที่ฟังก์ชันของเรา"
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+
 
