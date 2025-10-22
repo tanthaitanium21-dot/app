@@ -31,7 +31,7 @@ exports.handler = async (event, context) => {
         // if (code == ACCESS_CODE) {
         //     return { statusCode: 200, body: JSON.stringify({ success: true, message: 'รหัสผ่านถูกต้อง' }) };
         // } else {
-        //     return { statusCode: 401, body: JSON.stringify({ success: false, message: 'รหัสไม่ถูกต้อง' }) };
+        //     return { statusCode: 401, body: JSON.stringify({ success: true, message: 'รหัสไม่ถูกต้อง' }) };
         // }
 
         // "บังคับ" ให้ส่ง "สำเร็จ" (Success: true) กลับไปเลย
@@ -64,4 +64,5 @@ exports.handler = async (event, context) => {
 
     return { statusCode: 400, body: JSON.stringify({ message: 'Invalid action' }) };
 };
+
 
