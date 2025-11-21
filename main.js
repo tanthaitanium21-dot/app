@@ -1,5 +1,5 @@
 // main.js
-// เวอร์ชัน V2.3 (Fixed): แสดงราคาเบรกเกอร์และข้อมูลมาตรฐาน
+// เวอร์ชัน V2.5 (Fixed): Group Electrical System + Locking Feature
 
 import { provinces, provinceZones } from './data/provinces.js';
 import { mainCableSpecs } from './data/electrical_data.js';
@@ -16,13 +16,16 @@ let activeTab = 'boq-combined';
 document.addEventListener('DOMContentLoaded', initApp);
 
 function initApp() {
-    console.log("App Starting (V2.3 Fixed)...");
+    console.log("App Starting (V2.5)...");
     
     try {
         renderAppUI();
         setupStaticData();
         setupEventListeners();
         populatePriceEditor();
+        
+        // Setup new Electrical System Logic
+        setupLockSystem();
         
         // Initial Calculation
         handleProvinceChange(); 
@@ -62,6 +65,55 @@ function setupStaticData() {
     if(rd) rd.valueAsDate = new Date();
 }
 
+// --- New Logic: Lock Electrical System ---
+function setupLockSystem() {
+    const lockCheckbox = document.getElementById('lock_electrical_system');
+    const container = document.getElementById('electrical-content');
+    const mainToggle = document.getElementById('electrical-main-toggle');
+    const arrow = document.getElementById('electrical-main-arrow');
+
+    // 1. Handle Lock Logic
+    if(lockCheckbox && container) {
+        lockCheckbox.addEventListener('change', (e) => {
+            const isLocked = e.target.checked;
+            
+            // Disable all interactive elements within the electrical content
+            const elements = container.querySelectorAll('input, select, button');
+            elements.forEach(el => {
+                // Prevent disabling the lock checkbox itself (which is outside content but just in case)
+                if(el !== lockCheckbox) {
+                    el.disabled = isLocked;
+                    if (isLocked) el.classList.add('bg-gray-100', 'cursor-not-allowed');
+                    else el.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                }
+            });
+
+            // Visual feedback
+            if(isLocked) {
+                container.classList.add('opacity-60', 'pointer-events-none');
+                // Ensure it stays expanded if locked, or you might want to allow collapse?
+                // Let's allow collapse even if locked, but interaction inside is forbidden.
+            } else {
+                container.classList.remove('opacity-60', 'pointer-events-none');
+            }
+        });
+    }
+
+    // 2. Handle Main Collapse Logic
+    if(mainToggle && container && arrow) {
+        mainToggle.addEventListener('click', () => {
+            const isHidden = container.classList.contains('hidden');
+            if(isHidden) {
+                container.classList.remove('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                container.classList.add('hidden');
+                arrow.style.transform = 'rotate(-90deg)';
+            }
+        });
+    }
+}
+
 function setupEventListeners() {
     document.body.addEventListener('change', (e) => {
         if(e.target.id === 'province_selector') handleProvinceChange();
@@ -72,12 +124,10 @@ function setupEventListeners() {
         
         if(e.target.id === 'toggle_ev_charger_visibility') handleEVToggle(e.target);
         
-        // เมื่อเปลี่ยนขนาด BTU/Watt หรือเปลี่ยนเบรกเกอร์ -> อัปเดตคำแนะนำ
         if(e.target.classList.contains('dedicated-unit-size')) {
             updateBreakerSuggestion(e.target);
         }
         if(e.target.id.includes('breaker_select')) {
-             // ถ้าเปลี่ยนเบรกเกอร์เอง ก็คำนวณราคาใหม่
              updateRealtimeTotal();
         }
         
@@ -158,10 +208,9 @@ function updateMainCableSuggestion() {
     displayEl.textContent = suggestionText;
 }
 
-// --- Logic ใหม่: คำแนะนำเบรกเกอร์พร้อมแสดงราคาจริง ---
 function updateBreakerSuggestion(selectElement) {
     const infoId = selectElement.dataset.targetInfo;
-    const type = selectElement.dataset.type; // 'ac' or 'wh'
+    const type = selectElement.dataset.type; 
     const val = parseInt(selectElement.value);
     const infoEl = document.getElementById(infoId);
     
@@ -170,19 +219,17 @@ function updateBreakerSuggestion(selectElement) {
     let recommendedAmp = 0;
     let note = "";
 
-    // Logic การเลือกขนาดเบรกเกอร์ตาม BTU/Watt
     if (type === 'ac') {
         if (val <= 12000) { recommendedAmp = 20; note = "แอร์ขนาดเล็ก (9000-12000 BTU)"; } 
         else if (val <= 18000) { recommendedAmp = 20; note = "ขนาดมาตรฐาน (12000-18000 BTU)"; }
         else if (val <= 24000) { recommendedAmp = 32; note = "ขนาดใหญ่ (18000-24000 BTU)"; }
         else { recommendedAmp = 32; note = "แอร์ขนาดใหญ่ (>24000 BTU)"; }
-    } else { // wh (Water Heater)
+    } else { 
         if (val <= 3500) { recommendedAmp = 20; note = "น้ำอุ่นทั่วไป (3500W)"; }
-        else if (val <= 4500) { recommendedAmp = 32; note = "น้ำอุ่นกำลังสูง (4500W)"; } // ปรับเป็น 32A เพื่อความปลอดภัย
+        else if (val <= 4500) { recommendedAmp = 32; note = "น้ำอุ่นกำลังสูง (4500W)"; } 
         else { recommendedAmp = 32; note = "น้ำร้อน/หม้อต้ม (>4500W)"; }
     }
 
-    // ดึงราคาจาก Price List (ต้นน้ำถึงปลายน้ำ)
     const prices = getPriceList();
     let price = 0;
     let matCode = "";
@@ -191,16 +238,12 @@ function updateBreakerSuggestion(selectElement) {
     else if (recommendedAmp <= 20) { matCode = "M-CB-1P-20A"; price = prices['M-CB-1P-20A'] || 0; }
     else { matCode = "M-CB-1P-32A"; price = prices['M-CB-1P-32A'] || 0; }
 
-    // อัปเดตข้อความแนะนำในกล่องเขียว
-    const detailEl = infoEl.querySelector('div:last-child');
-    if (detailEl) {
-        detailEl.innerHTML = `
-            มาตรฐานแนะนำ: <strong>${recommendedAmp} Amp</strong> (${note})<br>
-            <span class="text-emerald-700">ราคาเบรกเกอร์: <strong>${price.toLocaleString()} บาท/ตัว</strong> (รหัส: ${matCode})</span>
-        `;
-    }
+    const detailEl = infoEl.querySelector('div:last-child') || infoEl;
+    detailEl.innerHTML = `
+        มาตรฐานแนะนำ: <strong>${recommendedAmp} Amp</strong> (${note})<br>
+        <span class="text-emerald-700">ราคาเบรกเกอร์: <strong>${price.toLocaleString()} บาท/ตัว</strong> (รหัส: ${matCode})</span>
+    `;
     
-    // เก็บค่าแนะนำไว้ที่ info element เพื่อให้ buildQuantities อ่านได้ถ้าเลือก Auto
     infoEl.dataset.autoAmp = recommendedAmp;
 }
 
@@ -212,7 +255,6 @@ function setupDynamicListener(id, type, containerId) {
             renderCircuitInputs(type, count, document.getElementById(containerId));
         } else {
             renderDedicatedCircuitInputs(type, count, document.getElementById(containerId));
-            // Trigger update suggestion for new items immediately
             setTimeout(() => {
                 document.querySelectorAll(`#${containerId} .dedicated-unit-size`).forEach(sel => updateBreakerSuggestion(sel));
             }, 0);
@@ -234,6 +276,8 @@ function buildQuantitiesFromDOM() {
     const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
     const getInt = (id) => parseInt(document.getElementById(id)?.value) || 0;
 
+    // *** Electrical System ***
+    
     // 1. Pole & Main
     const ph = document.getElementById('pole_height_7')?.value;
     const pc = getInt('pole_count_7');
@@ -307,7 +351,7 @@ function buildQuantitiesFromDOM() {
         }
     }
 
-    // 5. AC/Heater (Logic: ใช้ค่าจาก Dropdown หรือ Auto)
+    // 5. AC/Heater
     ['ac_wiring', 'heater_wiring'].forEach(prefix => {
         const count = getInt(`${prefix}_units`);
         const installType = document.getElementById(prefix==='ac_wiring'?'ac_install_type_4':'wh_install_type_5')?.value;
@@ -325,9 +369,8 @@ function buildQuantitiesFromDOM() {
                         addQty('2.2', dist); addQty('13.2', 2);
                     } else if(installType.includes('trunking')) addQty('14.1', dist);
                 }
-                addQty('12.1', 1); // กล่องเบรกเกอร์
+                addQty('12.1', 1);
 
-                // อ่านค่า Breaker
                 const breakerSelect = document.getElementById(`${prefix}_${i}_breaker_select`);
                 const infoDiv = document.getElementById(`${prefix}_${i}_breaker_info`);
                 let amps = 0;
@@ -340,7 +383,6 @@ function buildQuantitiesFromDOM() {
                     }
                 }
 
-                // เพิ่มเบรกเกอร์ตามขนาดที่ได้
                 if(amps > 0) {
                     if(amps <= 16) addQty('10.1', 1);
                     else if(amps <= 20) addQty('10.2', 1);
